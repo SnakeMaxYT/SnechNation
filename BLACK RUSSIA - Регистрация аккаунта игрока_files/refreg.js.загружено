@@ -1,0 +1,94 @@
+(function() {
+  "use strict"
+
+  var $form = $('#referred-signup-form')
+  var $loadingOverlay = $('#fullpage-loading-overlay')
+  var $successAlert = $('#reg-success-alert')
+  var $successAlertNick = $successAlert.find('#reg-success-alert__nick')
+  var $successAlertServer = $successAlert.find('#reg-success-alert__server')
+  var $successAlertPassword = $successAlert.find('#reg-success-alert__password')
+  var $launcherLink = $successAlert.find('.launcher-download-link')
+
+  var launcherLinkHref = $launcherLink.attr("href")
+  var allowSubmit = true
+  var form = $form[0]
+
+
+  $form.on("submit", function(event) {
+    if (!window.isCaptchaFilled) {
+      $('#g-captcha-error').remove()
+      var $gCaptchaError = $(
+        '<ul class="field-errors">' +
+          '<li id="g-captcha-error"> Пожалуйста, пройдите капчу! </li>' +
+        '</ul>'
+      )
+      $gCaptchaError.appendTo('#reg-form-captcha')
+      return false
+    }
+
+    event.preventDefault()
+
+    // Предотвращаем повторную отправку формы, при "закликивании" кнопки, а
+    // также отображает затемненный фон со спиннером на время загрузки ответа
+    // от обработчика.
+    if (allowSubmit) {
+      $loadingOverlay.show()
+      allowSubmit = false
+      event.preventDefault()
+    }
+    else {
+      return false
+    }
+
+    // Запускаем JS-проверку формы и предотвращаем ее отправку, при обнаружении
+    // каких-либо ошибок.
+    if (form.checkValidity() === false) {
+      return
+    }
+
+    var postUrl = $form.attr('action'),
+        postData = $form.serialize()
+
+    $.post(postUrl, postData)
+      .done(function(data) {
+        // Показываем popup-сообщение об успешной регистрации аккаунта и
+        // возвращаем форму в исходное состояние.
+        $successAlertNick.text(data["nickname"])
+        $successAlertServer.text(data["server"])
+        $successAlertPassword.text(data["password"])
+        $successAlert.show()
+
+        // После небольшой паузы, начинаем автоматическую загрузку лаунчера
+        // игры.
+        setTimeout( () => {
+          $('<iframe>', {
+            width: 1,
+            height: 1,
+            frameborder: 0,
+            src: launcherLinkHref,
+            style: "display: none",
+          }).appendTo('body')
+        }, 3000)
+
+        form.reset()
+      })
+      .fail(function(jqXHR, textStatus, errorThrown) {
+        // Обрабатываем общие ошибки
+        window.handleCommonAjaxErrors(jqXHR)
+        window.handleFormAjaxErrors(jqXHR, $form)
+
+        // XXX Показываем ошибки формы
+      })
+      .always(function() {
+        allowSubmit = true
+        $loadingOverlay.hide()
+
+        // Сбрасываем капчу после отправки формы
+        grecaptcha.reset(window.captchaWidgetId)
+        window.isCaptchaFilled = false
+      })
+
+  })
+
+
+})()

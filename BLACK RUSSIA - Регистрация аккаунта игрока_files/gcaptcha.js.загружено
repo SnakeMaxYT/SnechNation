@@ -1,0 +1,24 @@
+;(function() {
+
+  window.isCaptchaFilled = false
+
+  window.captchaFilled = function() {
+      window.isCaptchaFilled = true
+  }
+
+  window.captchaExpired = function() {
+      window.isCaptchaFilled = false
+  }
+
+  window.captchaOnload = function() {
+    window.isCaptchaFilled = false
+    window.captchaWidgetId = grecaptcha.render("reg-form-captcha", {
+      "sitekey": "6Lfg0-IZAAAAADKjN2iJR_ms_sMGqF8atsXAOH1_",
+      "callback": "captchaFilled",
+      "expired-callback": "captchaExpired",
+      "error-callback": "captchaExpired",
+      "theme": "dark",
+    })
+  }
+
+})()
